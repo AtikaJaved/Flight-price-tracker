@@ -3,7 +3,7 @@ from pymongo import MongoClient
 
 app = Flask(__name__)
 
-# connect to MongoDB
+
 client = MongoClient("mongodb://localhost:27017/")
 db = client["flight_tracker"]
 flights_collection = db["flights"]
@@ -30,10 +30,10 @@ def seed_data():
     flights_collection.insert_many(sample_flights)
     return jsonify({"message": "Sample flights added successfully!"})
 
-# 🆕 View all flights
+
 @app.route('/flights', methods=['GET'])
 def get_flights():
-    flights = list(flights_collection.find({}, {"_id": 0}))  # hide MongoDB _id field
+    flights = list(flights_collection.find({}, {"_id": 0}))  
     return jsonify(flights)
 
 
@@ -44,7 +44,7 @@ from datetime import datetime
 def search_flights():
     route = request.args.get('route')
     airline = request.args.get('airline')
-    flight_date = request.args.get('flight_date')  # optional
+    flight_date = request.args.get('flight_date') 
 
     query = {}
     if route:
@@ -67,7 +67,7 @@ def search_flights():
 
 
 
-# Remove duplicates
+
     seen = set()
     unique_flights = []
     for f in flights_list:
@@ -78,7 +78,7 @@ def search_flights():
 
     return jsonify(unique_flights)
 
-# Ranked search
+
 @app.route("/search_ranked", methods=["GET"])
 def search_ranked():
     route = request.args.get("route", "").strip()
@@ -110,7 +110,7 @@ def search_ranked():
             "score": total_score
         })
 
-    # Remove duplicates
+
     seen = set()
     unique_results = []
     for f in results:
@@ -119,7 +119,7 @@ def search_ranked():
             seen.add(key)
             unique_results.append(f)
 
-    # Sort by score descending
+    
     unique_results.sort(key=lambda x: x["score"], reverse=True)
     return jsonify(unique_results)
 
@@ -134,12 +134,12 @@ def track_flight():
     route = request.args.get('route')
     airline = request.args.get('airline')
     flight_date = request.args.get('flight_date')
-    interval_days = int(request.args.get('interval', 15))  # default 15 days
+    interval_days = int(request.args.get('interval', 15))
 
     if not route or not airline or not flight_date:
         return jsonify({"error": "Please provide route, airline, and flight_date"}), 400
 
-    # Find flight
+    
     flight = flights_collection.find_one({
         "route": route,
         "airline": airline,
@@ -149,7 +149,7 @@ def track_flight():
     if not flight:
         return jsonify({"error": "Flight not found"}), 404
 
-    # Simulate price tracking every N days before flight date
+    
     flight_day = datetime.strptime(flight_date, "%Y-%m-%d")
     today = datetime.now()
     days_diff = (flight_day - today).days
@@ -159,7 +159,7 @@ def track_flight():
 
     for d in range(days_diff, 0, -interval_days):
         date_point = (flight_day - timedelta(days=d)).strftime("%Y-%m-%d")
-        # simulate small price fluctuation
+        
         price_change = uniform(-0.05, 0.05)
         current_price = round(current_price * (1 + price_change), 2)
         prices.append({"date": date_point, "price": current_price})
@@ -187,7 +187,7 @@ def update_price():
     if not all([route, airline, flight_date, date, price]):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Find and update the flight
+    
     result = flights_collection.update_one(
         {"route": route, "airline": airline, "flight_date": flight_date},
         {"$set": {f"price.{date}": price}}
@@ -214,19 +214,19 @@ def track_prices():
     route = data.get("route")
     airline = data.get("airline")
     flight_date = data.get("flight_date")
-    interval_days = data.get("interval_days", 15)  # default 15 days
+    interval_days = data.get("interval_days", 15)  
 
     if not all([route, airline, flight_date]):
         return jsonify({"error": "route, airline, and flight_date are required"}), 400
 
-    # find the flight in MongoDB
+    
     flight = flights_collection.find_one(
         {"route": route, "airline": airline, "flight_date": flight_date}
     )
     if not flight:
         return jsonify({"error": "Flight not found"}), 404
 
-    # get the earliest price from the existing data
+    
     price_values = list(flight["price"].values())
     if not price_values:
         return jsonify({"error": "No price data found for this flight"}), 400
@@ -238,7 +238,7 @@ def track_prices():
     end_date = datetime.strptime(flight_date, "%Y-%m-%d")
 
     while start_date < end_date:
-        # simulate price fluctuation randomly
+        
         change_percent = random.uniform(-0.05, 0.05)
         current_price = round(current_price * (1 + change_percent), 2)
         tracked_prices.append({
@@ -263,7 +263,7 @@ def track_prices():
 def best_deal():
     data = request.get_json()
 
-    # Validate request
+    
     required_fields = ['route', 'airline', 'flight_date', 'interval_days']
     for field in required_fields:
         if field not in data:
@@ -274,7 +274,7 @@ def best_deal():
     flight_date = data['flight_date']
     interval_days = data['interval_days']
 
-    # Dummy price data (simulate tracking)
+   
     prices = [
         {"date": "2025-10-23", "price": 575.28},
         {"date": "2025-11-07", "price": 554.77},
@@ -286,7 +286,7 @@ def best_deal():
         {"date": "2026-02-05", "price": 551.00}
     ]
 
-    # Find the lowest price
+  
     best_deal = min(prices, key=lambda x: x['price'])
 
     return jsonify({
@@ -302,3 +302,4 @@ def best_deal():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
